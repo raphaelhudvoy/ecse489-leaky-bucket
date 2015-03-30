@@ -13,8 +13,8 @@ public class ClientMain {
 		Thread[] clients = new Thread[config.numConnections];
 		
 		for (int i = 0; i < config.numConnections; i++) {			
-			clients[0] = new Thread(new Client(config.usesBurst[i], config.usesBucket[i]));
-			clients[0].start();	
+			clients[i] = new Thread(new Client(config.usesBurst[i], config.usesBucket[i]));
+			clients[i].start();	
 		}
 	}
 	
