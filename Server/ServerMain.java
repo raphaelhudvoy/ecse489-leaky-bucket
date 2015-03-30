@@ -14,7 +14,7 @@ public class ServerMain {
       while (true) {
          Socket sock = ssock.accept();
          System.out.println("Connected");
-         new Thread(new Server(sock)).start();
+         new Thread(new ServerRequestHandler(sock)).start();
       }
    }
 

@@ -4,15 +4,16 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketException;
 
-public class Server implements Runnable{
+public class ServerRequestHandler implements Runnable{
 
 	byte[] packet;
 	Socket socket;
+	int sleep;
 	
-	Server(Socket socket) {
+	ServerRequestHandler(Socket socket) {
 		this.socket = socket;
-		this.packet = new byte[800];
 	}
 
 	@Override
@@ -23,7 +24,14 @@ public class Server implements Runnable{
 			DataInputStream is = new DataInputStream(socket.getInputStream());
 
 			Boolean burst = is.readBoolean();
-			System.out.println("burst is " + burst);
+			
+			if (burst) {
+				this.packet = new byte[120000];
+				this.sleep = 15000;
+			} else {
+				this.packet = new byte[800];
+				this.sleep = 100;
+			}
 
 			Boolean bucket = is.readBoolean();
 			System.out.println("bucket is " + bucket);
@@ -31,10 +39,18 @@ public class Server implements Runnable{
 
 			while(true) {
 				try {
+					
 					os.write(packet);
-					Thread.sleep(100);
+					Thread.sleep(sleep);
+					
 				} catch (InterruptedException e) {
 					e.printStackTrace();
+				} catch (SocketException e) {
+					
+					// Client disconnected
+					System.out.println("connection close");
+					socket.close();
+					break;
 				}
 			}
 
