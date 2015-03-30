@@ -5,7 +5,7 @@ public class ClientMain {
 
 	public static void main(String[] args) {
 		
-		Thread client1 = new Thread(new Client(true, true));
+		Thread client1 = new Thread(new Client(false, true));
 		client1.start();
 	
 	}
