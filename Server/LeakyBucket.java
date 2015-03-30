@@ -12,10 +12,13 @@ public class LeakyBucket extends Thread {
 	
 	public LeakyBucket(Socket socket, int capacity, int emissionInterval) {
 		if (capacity <= 0) {
-			throw new IllegalArgumentException();
+			throw new IllegalArgumentException("Bucket capacity must be positive");
 		}
 		if (emissionInterval <= 0) {
-			throw new IllegalArgumentException();
+			throw new IllegalArgumentException("Emission interval must be positive");
+		}
+		if (socket == null) {
+			throw new IllegalArgumentException("Socket must be instantiated");
 		}
 		this.capacity = capacity;
 		this.emissionInterval = emissionInterval;
