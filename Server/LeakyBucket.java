@@ -35,7 +35,9 @@ public class LeakyBucket extends Thread {
 	}
 	
 	public synchronized void leak() {
-		size--;
+		if (size > 0) {
+			size--;
+		}
 	}
 	
 	public void stopLeaking() {
