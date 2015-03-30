@@ -15,6 +15,8 @@ public class Client implements Runnable{
 	private DataOutputStream os = null;
 	private DataInputStream is = null;
 	
+	private byte[] readData = new byte[800];
+	
 	public Client(Boolean burst,Boolean bucket) {
 		
 		this.burst = burst;
@@ -59,7 +61,8 @@ public class Client implements Runnable{
 			os.writeBoolean(bucket);
 			
 			while (!stop) {
-				is.read();
+				int length = is.read(readData);
+				System.out.println("packet has " + length + " of length");
 			}
 
 		} catch (IOException e) {
