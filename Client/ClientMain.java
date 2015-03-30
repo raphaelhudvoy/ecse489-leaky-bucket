@@ -8,6 +8,10 @@ public class ClientMain {
 		if (args.length < 1) {
 			System.out.println("Need config file as argument");
 		}
+		
+		String curDir = System.getProperty("user.dir");
+
+		
 		ClientConfig config = new ClientConfig(new File(args[0]));
 		
 		Thread[] clients = new Thread[config.numConnections];

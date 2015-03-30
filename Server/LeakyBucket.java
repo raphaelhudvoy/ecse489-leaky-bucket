@@ -1,14 +1,20 @@
 package Server;
 
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 
-public class LeakyBucket implements Runnable, IOutputFilter {
+public class LeakyBucket implements Runnable {
 	private Socket socket;
 	private int size = 0;
 	private final int capacity;
 	private final int emissionInterval; // the rate at which the bucket leaks
 	
 	private boolean leaking = false;
+	private DataOutputStream os;
+	
+	private int packetSize = 100;
 	
 	public LeakyBucket(Socket socket, int capacity, int emissionInterval) {
 		if (capacity <= 0) {
@@ -23,6 +29,12 @@ public class LeakyBucket implements Runnable, IOutputFilter {
 		this.capacity = capacity;
 		this.emissionInterval = emissionInterval;
 		this.socket = socket;
+		
+		try {
+			this.os = new DataOutputStream(socket.getOutputStream());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	// returns true if adding a packet was successful
@@ -36,8 +48,23 @@ public class LeakyBucket implements Runnable, IOutputFilter {
 	
 	public synchronized void leak() {
 		if (size > 0) {
-			size--;
+			size -= packetSize;
+			
+			try {
+				
+				os.write(new byte[packetSize]);
+			} catch (IOException e) {
+				
+				// Client disconnected
+				System.out.println("connection close");
+				try {
+					socket.close();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}				
+			}
 		}
+		
 	}
 	
 	public void stopLeaking() {
@@ -54,12 +81,6 @@ public class LeakyBucket implements Runnable, IOutputFilter {
 		} catch(Exception e) {
 			System.out.println(e);
 		}
-	}
-
-	@Override
-	public void send(byte[] packet) {
-		
-		
 	}
 	
 	

@@ -19,9 +19,11 @@ public class ServerRequestHandler implements Runnable{
 	final int SLEEP = 100;
 	final int BURST_PACKET_SIZE = 120000;
 	final int BURST_SLEEP = 15000;
+	private ServerConfig config;
 	
-	ServerRequestHandler(Socket socket) {
+	ServerRequestHandler(Socket socket, ServerConfig config) {
 		this.socket = socket;
+		this.config = config;
 	}
 
 	@Override
@@ -46,9 +48,11 @@ public class ServerRequestHandler implements Runnable{
 
 
 			Boolean bucket = is.readBoolean();
-			
+			LeakyBucket leakyBucket = new LeakyBucket(socket, config.capacity, config.rate);
+
 			if (bucket) {
-				
+				Thread filterThread = new Thread(leakyBucket);
+				filterThread.start();
 			} else {
 				Thread filterThread = new Thread(new NoBucketFilter(buffer, socket));
 				filterThread.start();
@@ -62,10 +66,15 @@ public class ServerRequestHandler implements Runnable{
 					
 					if (socket.isClosed()) break;
 					
-					synchronized (buffer) {
-						System.out.println("send packet");
-						buffer.put(packet);
+					
+					if (!bucket) {
+						synchronized (buffer) {
+							buffer.put(packet);
+						}
+					} else {
+						leakyBucket.addPackets(packet.length);
 					}
+					
 					
 					Thread.sleep(sleep);
 					
