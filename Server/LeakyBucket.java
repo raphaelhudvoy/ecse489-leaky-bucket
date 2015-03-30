@@ -2,7 +2,7 @@ package Server;
 
 import java.net.Socket;
 
-public class LeakyBucket extends Thread {
+public class LeakyBucket implements Runnable, IOutputFilter {
 	private Socket socket;
 	private int size = 0;
 	private final int capacity;
@@ -54,6 +54,12 @@ public class LeakyBucket extends Thread {
 		} catch(Exception e) {
 			System.out.println(e);
 		}
+	}
+
+	@Override
+	public void send(byte[] packet) {
+		
+		
 	}
 	
 	
