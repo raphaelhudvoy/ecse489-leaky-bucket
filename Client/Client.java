@@ -22,7 +22,7 @@ public class Client implements Runnable{
 		stop = false;
 
 		try {
-			socket = new Socket(Config.HOSTNAME, Config.PORT);
+			socket = new Socket(ClientConfig.HOSTNAME, ClientConfig.PORT);
 			
 			os = new DataOutputStream(socket.getOutputStream());
 			is = new DataInputStream(socket.getInputStream());
