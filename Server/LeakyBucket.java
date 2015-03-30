@@ -40,6 +40,7 @@ public class LeakyBucket implements Runnable {
 	// returns true if adding a packet was successful
 	public synchronized boolean addPackets(int numPackets) {
 		if (size + numPackets>= capacity) {
+			size = capacity;
 			return false;
 		}
 		size += numPackets;
