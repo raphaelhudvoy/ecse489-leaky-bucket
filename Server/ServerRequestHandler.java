@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 
 import Client.Client;
 
@@ -32,9 +33,10 @@ public class ServerRequestHandler implements Runnable{
 
 			DataInputStream is = new DataInputStream(socket.getInputStream());
 			
-			ByteBuffer buffer = ByteBuffer.allocate(BURST_PACKET_SIZE*4);
 			
 			Boolean burst = is.readBoolean();
+			
+			byte number = 1;
 			
 			if (burst) {
 				this.packet = new byte[BURST_PACKET_SIZE];
@@ -48,13 +50,17 @@ public class ServerRequestHandler implements Runnable{
 
 
 			Boolean bucket = is.readBoolean();
-			LeakyBucket leakyBucket = new LeakyBucket(socket, config.capacity, config.rate);
+			IOutputFilter outputFilter;
 
 			if (bucket) {
-				Thread filterThread = new Thread(leakyBucket);
+				outputFilter = new LeakyBucket(socket, config.capacity, config.rate);
+				
+				Thread filterThread = new Thread((Runnable) outputFilter);
 				filterThread.start();
 			} else {
-				Thread filterThread = new Thread(new NoBucketFilter(buffer, socket));
+				outputFilter = new NoBucketFilter(socket);
+				
+				Thread filterThread = new Thread((Runnable) outputFilter);
 				filterThread.start();
 			}
 			
@@ -66,16 +72,8 @@ public class ServerRequestHandler implements Runnable{
 					
 					if (socket.isClosed()) break;
 					
-					
-					if (!bucket) {
-						synchronized (buffer) {
-							buffer.put(packet);
-						}
-					} else {
-						leakyBucket.addPackets(packet.length);
-					}
-					
-					
+					outputFilter.send(packet);
+
 					Thread.sleep(sleep);
 					
 				} catch (InterruptedException e) {

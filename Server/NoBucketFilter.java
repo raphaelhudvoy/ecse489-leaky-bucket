@@ -4,16 +4,17 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 public class NoBucketFilter implements Runnable, IOutputFilter {
 
-	private ByteBuffer buffer;
+	private ArrayList<Byte> buffer;
 	private DataOutputStream os;
 	private Socket socket;
 
-	NoBucketFilter (ByteBuffer buffer, Socket socket) {
-		this.buffer = buffer;
+	NoBucketFilter (Socket socket) {
+		this.buffer = new ArrayList<Byte>();
 		this.socket = socket;
 		
 		try {
@@ -26,45 +27,56 @@ public class NoBucketFilter implements Runnable, IOutputFilter {
 	@Override
 	public void send(byte[] packet) {
 		synchronized (buffer) {
-			buffer.put(packet);
+			for (int i = 0; i < packet.length; i++) {
+				buffer.add(packet[i]);
+			}
 		}
 	}
 
 	@Override
 	public void run() {
-		byte[] currentByte = new byte[0];
-		int bufferPosition = 0;
+		byte[] packetToSend = new byte[0];
+		int bufferSize = 0;
 		
 		while(true) {
 			
 			synchronized (buffer) {
-				bufferPosition = buffer.position();
-				if (bufferPosition > 0) {
-					currentByte = buffer.array();
-					buffer.clear();
-
-				}
-			}
-
-			if (bufferPosition > 0) {
-				try {
+				
+				// Convert Arraylist<Byte> to byte[]
+				bufferSize = buffer.size();
+				if (bufferSize > 0) {
+					packetToSend = new byte[bufferSize];
 					
-					os.write(Arrays.copyOfRange(currentByte, 0, bufferPosition));
-				} catch (IOException e) {
-					
-					// Client disconnected
-					System.out.println("connection close");
-					try {
-						socket.close();
-					} catch (IOException e1) {
-						e1.printStackTrace();
+					for (int i = 0; i < bufferSize; i++ ) {
+						packetToSend[i] = buffer.get(i);
 					}
-					
-					
-					break;
-					
+				} else {
+					packetToSend = new byte[0];
 				}
 			}
+
+			try {
+				if (packetToSend.length > 0) {
+					os.write(packetToSend);
+					buffer.clear();
+					packetToSend = new byte[0];
+				}
+				
+			} catch (IOException e) {
+				
+				// Client disconnected
+				System.out.println("connection close");
+				try {
+					socket.close();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+				
+				
+				break;
+				
+			}
+			
 		}
 	}
 }

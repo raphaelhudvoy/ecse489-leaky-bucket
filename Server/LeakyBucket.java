@@ -1,11 +1,14 @@
 package Server;
 
+import java.awt.List;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
 
-public class LeakyBucket implements Runnable {
+public class LeakyBucket implements Runnable, IOutputFilter {
 	private Socket socket;
 	private int size = 0;
 	private final int capacity;
@@ -14,7 +17,8 @@ public class LeakyBucket implements Runnable {
 	private boolean leaking = false;
 	private DataOutputStream os;
 	
-	private int packetSize = 100;
+	private int LEAKING_PACKET_SIZE = 100;
+	private ArrayList<Byte> buffer;
 	
 	public LeakyBucket(Socket socket, int capacity, int emissionInterval) {
 		if (capacity <= 0) {
@@ -29,6 +33,8 @@ public class LeakyBucket implements Runnable {
 		this.capacity = capacity;
 		this.emissionInterval = emissionInterval;
 		this.socket = socket;
+		this.buffer = new ArrayList<Byte>();
+;
 		
 		try {
 			this.os = new DataOutputStream(socket.getOutputStream());
@@ -37,23 +43,73 @@ public class LeakyBucket implements Runnable {
 		}
 	}
 	
-	// returns true if adding a packet was successful
-	public synchronized boolean addPackets(int numPackets) {
-		if (size + numPackets>= capacity) {
+	// returns true if adding nothing has leaked
+	public synchronized boolean addPackets(byte[] packet) {
+		int packetSize = packet.length;
+		
+		// Bucket is full
+		if (size >= capacity) {
+			return false;
+		}
+		
+		// Bucket is not full but there is not  enough
+		// place to fit the whole packet (leaking)
+		else if (size + packetSize >= capacity) {
+			int remainingRoom = capacity - size;
+			
+			byte[] newPacket = Arrays.copyOfRange(packet, 0, remainingRoom - 1);
+			enqueuePacket(newPacket);
 			size = capacity;
 			return false;
 		}
-		size += numPackets;
+		
+		else {
+			size += packetSize;
+			enqueuePacket(packet);
+		}
 		return true;
 	}
 	
+	private void enqueuePacket(byte[] packet) {
+		
+		synchronized (buffer) {
+			for (int i = 0; i < packet.length; i++) {
+				buffer.add(packet[i]);
+			}
+		}
+	}
+
 	public synchronized void leak() {
 		if (size > 0) {
-			size -= packetSize;
+			size -= LEAKING_PACKET_SIZE;
 			
 			try {
 				
-				os.write(new byte[packetSize]);
+				byte[] packetToLeak = new byte[LEAKING_PACKET_SIZE];
+ 				synchronized(buffer) {
+ 					
+ 					// make sure the buffer contains more than the leaking size. Otherwise send the whole buffer
+ 					int leaking_size = buffer.size() > LEAKING_PACKET_SIZE ? LEAKING_PACKET_SIZE : buffer.size();
+ 					
+ 					
+ 					// Create the packet to send
+					for (int i = 0; i < leaking_size; i++) {
+						packetToLeak[i] = buffer.get(i);
+					}		
+					
+					// Remove send byte from the buffer
+					if (leaking_size == LEAKING_PACKET_SIZE) {
+						buffer = new ArrayList<Byte>(buffer.subList(LEAKING_PACKET_SIZE, buffer.size()));
+					} else {
+						buffer.clear();
+					}
+				}
+ 				
+ 				//send the packet
+ 				if (packetToLeak.length > 0) {
+ 					os.write(packetToLeak);
+ 				}
+
 			} catch (IOException e) {
 				
 				// Client disconnected
@@ -82,6 +138,12 @@ public class LeakyBucket implements Runnable {
 		} catch(Exception e) {
 			System.out.println(e);
 		}
+	}
+
+	@Override
+	public void send(byte[] packet) {
+		addPackets(packet);
+		
 	}
 	
 	
