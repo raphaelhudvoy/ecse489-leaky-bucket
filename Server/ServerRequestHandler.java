@@ -33,11 +33,14 @@ public class ServerRequestHandler implements Runnable{
 
 			DataInputStream is = new DataInputStream(socket.getInputStream());
 			
+			Byte burstCode = is.readByte();
+			if (burstCode != 10) {
+				socket.close();
+				return;
+			}
 			
 			Boolean burst = is.readBoolean();
-			
-			byte number = 1;
-			
+						
 			if (burst) {
 				this.packet = new byte[BURST_PACKET_SIZE];
 				this.sleep = BURST_SLEEP;
@@ -48,7 +51,11 @@ public class ServerRequestHandler implements Runnable{
 			
 			System.out.println("burst is " + burst);
 
-
+			Byte bucketCode = is.readByte();
+			if (bucketCode != 20) {
+				socket.close();
+				return;
+			}
 			Boolean bucket = is.readBoolean();
 			IOutputFilter outputFilter;
 

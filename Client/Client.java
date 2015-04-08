@@ -58,7 +58,9 @@ public class Client implements Runnable{
 	public void run() {
 		
 		try {
+			os.writeByte(10);
 			os.writeBoolean(burst);
+			os.writeByte(20);
 			os.writeBoolean(bucket);
 			
 			while (!stop) {
