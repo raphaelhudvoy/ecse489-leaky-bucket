@@ -21,6 +21,8 @@ public class ServerRequestHandler implements Runnable{
 	final int BURST_PACKET_SIZE = 120000;
 	final int BURST_SLEEP = 15000;
 	private ServerConfig config;
+	private boolean burst;
+	private boolean bucket;
 	
 	ServerRequestHandler(Socket socket, ServerConfig config) {
 		this.socket = socket;
@@ -33,30 +35,42 @@ public class ServerRequestHandler implements Runnable{
 
 			DataInputStream is = new DataInputStream(socket.getInputStream());
 			
-			Byte burstCode = is.readByte();
-			if (burstCode != 10) {
-				socket.close();
-				return;
-			}
-			
-			Boolean burst = is.readBoolean();
-						
-			if (burst) {
-				this.packet = new byte[BURST_PACKET_SIZE];
-				this.sleep = BURST_SLEEP;
-			} else {
-				this.packet = new byte[PACKET_SIZE];
-				this.sleep = SLEEP;
-			}
-			
-			System.out.println("burst is " + burst);
+			boolean configurated = false;
+			DataOutputStream os = new DataOutputStream(socket.getOutputStream());
+			// Reads instruction 
+			while (!configurated) {
+				
+				Byte code = is.readByte();
+				switch (code) {
+				case 10: 
+					boolean value = is.readBoolean();
 
-			Byte bucketCode = is.readByte();
-			if (bucketCode != 20) {
-				socket.close();
-				return;
+					if (value) {
+						// Burst Mode
+						this.packet = new byte[BURST_PACKET_SIZE];
+						this.sleep = BURST_SLEEP;
+					} else {
+						this.packet = new byte[PACKET_SIZE];
+						this.sleep = SLEEP;
+					}
+					System.out.println("burst received " + burst);
+					break;
+				case 20:
+					bucket = is.readBoolean();
+					System.out.println("bucket received " + bucket);
+					break;
+				case 30:
+					configurated = true;
+					System.out.println("config done received " );
+					break;
+				default:
+					code = 0;
+				} 
+				os.writeByte(code);
+				
 			}
-			Boolean bucket = is.readBoolean();
+						
+			
 			IOutputFilter outputFilter;
 
 			if (bucket) {
@@ -71,14 +85,13 @@ public class ServerRequestHandler implements Runnable{
 				filterThread.start();
 			}
 			
-			System.out.println("bucket is " + bucket);
-
 
 			while(true) {
 				try {
 					
 					if (socket.isClosed()) break;
 					
+					System.out.println("sending ... " + packet.length);
 					outputFilter.send(packet);
 
 					Thread.sleep(sleep);

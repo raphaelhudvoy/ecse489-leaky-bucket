@@ -58,12 +58,41 @@ public class Client implements Runnable{
 	public void run() {
 		
 		try {
-			os.writeByte(10);
-			os.writeBoolean(burst);
-			os.writeByte(20);
-			os.writeBoolean(bucket);
 			
+			// Configure burst
+			boolean confirmed = false;
+			while (!confirmed) {
+				os.writeByte(10);
+				os.writeBoolean(burst);
+				
+				byte value = is.readByte();
+				
+				if (value == 10) confirmed = true;
+			}
+			
+			// Configure bucket
+			confirmed = false;
+			while (!confirmed) {
+				os.writeByte(20);
+				os.writeBoolean(bucket);
+				
+				byte value = is.readByte();
+				
+				if (value == 20) confirmed = true;
+			}
+			
+			// Start sending command
+			confirmed = false;
+			while (!confirmed) {
+				os.writeByte(30);
+				
+				byte value = is.readByte();
+				
+				if (value == 30) confirmed = true;
+			}
+
 			while (!stop) {
+				
 				int length = is.read(readData);
 				this.packetMonitor.addPacket(Arrays.copyOfRange(readData, 0, length));
 			}
