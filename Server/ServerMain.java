@@ -11,7 +11,9 @@ public class ServerMain {
 	ServerConfig config = new ServerConfig(args);
    
       ServerSocket ssock = new ServerSocket(ClientConfig.PORT);
-      System.out.println("Listening");
+      System.out.println("Server Config:\nCapacity : " + config.capacity + " bytes \nEmited Packet size : " + config.packetSize + " bytes \nRate: " + config.rate + " ms");
+
+      System.out.println("Listening...");
       while (true) {
          Socket sock = ssock.accept();
          System.out.println("Connected");

@@ -10,7 +10,7 @@ public class ClientMain {
 		}
 		
 		String curDir = System.getProperty("user.dir");
-		int simulationTimeInSec = 30;
+		int simulationTimeInSec = 60*5;
 
 		
 		ClientConfig config = new ClientConfig(new File(args[0]));

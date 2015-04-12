@@ -17,21 +17,22 @@ public class LeakyBucket implements Runnable, IOutputFilter {
 	private boolean leaking = false;
 	private DataOutputStream os;
 	
-	private int LEAKING_PACKET_SIZE = 100;
+	private int leakingPacketSize = 100;
 	private ArrayList<Byte> buffer;
 	
-	public LeakyBucket(Socket socket, int capacity, int emissionInterval) {
-		if (capacity <= 0) {
+	public LeakyBucket(Socket socket, ServerConfig config) {
+		if (config.capacity <= 0) {
 			throw new IllegalArgumentException("Bucket capacity must be positive");
 		}
-		if (emissionInterval <= 0) {
+		if (config.rate <= 0) {
 			throw new IllegalArgumentException("Emission interval must be positive");
 		}
 		if (socket == null) {
 			throw new IllegalArgumentException("Socket must be instantiated");
 		}
-		this.capacity = capacity;
-		this.emissionInterval = emissionInterval;
+		this.capacity = config.capacity;
+		this.emissionInterval = config.rate;
+		this.leakingPacketSize = config.packetSize;
 		this.socket = socket;
 		this.buffer = new ArrayList<Byte>();
 ;
@@ -81,15 +82,15 @@ public class LeakyBucket implements Runnable, IOutputFilter {
 
 	public synchronized void leak() {
 		if (size > 0) {
-			size -= LEAKING_PACKET_SIZE;
+			size -= leakingPacketSize;
 			
 			try {
 				
-				byte[] packetToLeak = new byte[LEAKING_PACKET_SIZE];
+				byte[] packetToLeak = new byte[leakingPacketSize];
  				synchronized(buffer) {
  					
  					// make sure the buffer contains more than the leaking size. Otherwise send the whole buffer
- 					int leaking_size = buffer.size() > LEAKING_PACKET_SIZE ? LEAKING_PACKET_SIZE : buffer.size();
+ 					int leaking_size = buffer.size() > leakingPacketSize ? leakingPacketSize : buffer.size();
  					
  					
  					// Create the packet to send
@@ -98,8 +99,8 @@ public class LeakyBucket implements Runnable, IOutputFilter {
 					}		
 					
 					// Remove send byte from the buffer
-					if (leaking_size == LEAKING_PACKET_SIZE) {
-						buffer = new ArrayList<Byte>(buffer.subList(LEAKING_PACKET_SIZE, buffer.size()));
+					if (leaking_size == leakingPacketSize) {
+						buffer = new ArrayList<Byte>(buffer.subList(leakingPacketSize, buffer.size()));
 					} else {
 						buffer.clear();
 					}

@@ -53,15 +53,13 @@ public class ServerRequestHandler implements Runnable{
 						this.packet = new byte[PACKET_SIZE];
 						this.sleep = SLEEP;
 					}
-					System.out.println("burst received " + burst);
 					break;
 				case 20:
 					bucket = is.readBoolean();
-					System.out.println("bucket received " + bucket);
 					break;
 				case 30:
 					configurated = true;
-					System.out.println("config done received " );
+					System.out.println("A client has been properly configured with burst " + burst + " and bucket " + bucket );
 					break;
 				default:
 					code = 0;
@@ -74,7 +72,7 @@ public class ServerRequestHandler implements Runnable{
 			IOutputFilter outputFilter;
 
 			if (bucket) {
-				outputFilter = new LeakyBucket(socket, config.capacity, config.rate);
+				outputFilter = new LeakyBucket(socket, config);
 				
 				Thread filterThread = new Thread((Runnable) outputFilter);
 				filterThread.start();

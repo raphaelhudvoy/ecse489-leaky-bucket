@@ -34,11 +34,17 @@ public class Client implements Runnable{
 			os = new DataOutputStream(socket.getOutputStream());
 			is = new DataInputStream(socket.getInputStream());
 			
+			initializationInformation();
+			
 
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 
+	}
+	
+	public void initializationInformation() {
+		System.out.println(name + ": burst is " + burst + " and bucket is " + bucket);
 	}
 
 	public String toString () {
